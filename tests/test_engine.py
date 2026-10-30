@@ -194,6 +194,18 @@ def test_stale_breakout_after_restart_is_skipped(cfg, store, prov):
     e = engine(RVOL, cfg, prov, store)
     e.poll(t(13, 0), prov.minute_bars(["AAA"], prov.session(DAY), t(13, 0)))   # candle ended 10:30, 2.5h ago
     assert e.state["AAA"].pos is None and e.state["AAA"].signal is None
+    assert e.state["AAA"].done and e.state["AAA"].done_reason == "stale_first_breakout"
+
+
+def test_later_breakout_after_stale_first_breakout_does_not_trade(cfg, store, prov):
+    setup_breakout(prov)
+    prov.bars["AAA"] += mk_bars(t(12, 0), [103.0] * 120)   # still above the range into the afternoon
+    prov.price["AAA"] = 103.0
+    e = engine(RVOL, cfg, prov, store)
+    e.poll(t(12, 30), prov.minute_bars(["AAA"], prov.session(DAY), t(12, 30)))  # restart: first breakout is old
+    e.poll(t(13, 0, 20), prov.minute_bars(["AAA"], prov.session(DAY), t(13, 0, 20)))  # fresh candle closes above
+    assert e.state["AAA"].pos is None and e.state["AAA"].signal is None
+    assert rows(store, RVOL) == []
 
 
 def test_restart_restores_open_position_and_does_not_double_enter(cfg, store, prov):

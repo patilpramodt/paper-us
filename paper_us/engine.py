@@ -170,9 +170,12 @@ class Orb30Engine:
             else:
                 continue
             if (now - c.end).total_seconds() > self.cfg.max_signal_age_sec:
-                log.info("[%s] %s stale breakout (candle ended %s) - skipped", self.v.name, sym, c.end.time())
-                continue
-            # first (fresh) breakout decides the RVOL gate
+                # This was the day's first breakout and it is gone: later breakouts must not trade.
+                st.done, st.done_reason = True, "stale_first_breakout"
+                log.info("[%s] %s stale first breakout (candle ended %s) -> done for the day",
+                         self.v.name, sym, c.end.time())
+                return
+            # first breakout decides the RVOL gate
             if st.rvol is None or st.rvol < self.v.rvol_min:
                 st.done, st.done_reason = True, f"rvol_gate({st.rvol_note})"
                 log.info("[%s] %s breakout but %s < %.1f -> done for the day",
