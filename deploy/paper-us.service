@@ -1,0 +1,18 @@
+[Unit]
+Description=paper-us ORB30 (paper only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/paper-us
+EnvironmentFile=/root/paper-us/.env
+ExecStart=/root/paper-us/venv/bin/python -m paper_us.runner
+Restart=always
+RestartSec=10
+# Python sends logs to stdout and to logs/paper_us.log
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
