@@ -1,0 +1,18 @@
+[Unit]
+Description=paper-us QQQ momentum, shares (paper only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/paper-us
+EnvironmentFile=/root/paper-us/.env
+ExecStart=/root/paper-us/venv/bin/python -m paper_us.momentum_runner
+Restart=always
+RestartSec=10
+# Python sends logs to stdout and to logs/qqq_momentum.log
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

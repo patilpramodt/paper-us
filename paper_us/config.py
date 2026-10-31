@@ -55,6 +55,16 @@ class Config:
     fee_per_contract: float = 0.65             # per side, per contract (broker-dependent: set yours)
     extra_slip_per_share: float = 0.00         # added to ask on buys, subtracted from bid on sells
 
+    # ── QQQ momentum (backtest/momentum.py settings, don't tune) ─────────────
+    mom_symbol: str = "QQQ"
+    mom_look: int = 14                         # sessions behind sigma
+    mom_vm: float = 1.0                        # band width in sigmas
+    mom_every: int = 30                        # minutes between checks
+    mom_qty: int = 50                          # shares, same as the option-replay comparison
+    mom_cost_bps: float = 0.2                  # per side
+    mom_history_feed: str = "sip"              # same feed as the backtest, for past sessions only
+    mom_bar_wait_sec: int = 60                 # how long after a check to wait for its bar
+
     # ── runtime ─────────────────────────────────────────────────────────────
     poll_sec: int = 10
     prestart_min: int = 10                     # load history this long before the open

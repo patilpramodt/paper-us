@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime, time, timedelta, timezone
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
-from alpaca.data.enums import DataFeed, OptionsFeed
+from alpaca.data.enums import Adjustment, DataFeed, OptionsFeed
 from alpaca.data.historical import OptionHistoricalDataClient, StockHistoricalDataClient
 from alpaca.data.requests import OptionSnapshotRequest, StockBarsRequest, StockLatestTradeRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
@@ -96,6 +96,27 @@ class AlpacaProvider:
             out[s] = [v for _, v in rows[:n]]
         return out
 
+    def history_sessions(self, symbol: str, before_day: date, n: int) -> List[Tuple[Session, List[Bar]]]:
+        cal = self._trade.get_calendar(GetCalendarRequest(
+            start=before_day - timedelta(days=n * 2 + 12), end=before_day - timedelta(days=1)))
+        sessions = [Session(c.date, _as_et(c.open, c.date), _as_et(c.close, c.date)) for c in cal]
+        sessions.sort(key=lambda s: s.day)
+        sessions = sessions[-n:]
+        if not sessions:
+            return []
+        req = StockBarsRequest(
+            symbol_or_symbols=symbol, timeframe=TimeFrame.Minute, adjustment=Adjustment.RAW,
+            start=sessions[0].open.astimezone(timezone.utc), end=sessions[-1].close.astimezone(timezone.utc),
+            feed=_STOCK_FEEDS[self.cfg.mom_history_feed],
+        )
+        bars = [_bar(b) for b in self._stock.get_stock_bars(req).data.get(symbol, [])]
+        out = []
+        for s in sessions:
+            rows = sorted((b for b in bars if s.open <= b.ts < s.close), key=lambda b: b.ts)
+            if rows and rows[0].ts == s.open:  # the backtest drops days with no opening bar
+                out.append((s, rows))
+        return out
+
     def latest_price(self, symbol: str) -> Optional[float]:
         res = self._stock.get_stock_latest_trade(
             StockLatestTradeRequest(symbol_or_symbols=symbol, feed=self.stock_feed))
@@ -149,4 +170,4 @@ class AlpacaProvider:
 
 def _bar(b) -> Bar:
     return Bar(ts=b.timestamp.astimezone(ET), o=float(b.open), h=float(b.high),
-               l=float(b.low), c=float(b.close), v=float(b.volume))
+               l=float(b.low), c=float(b.close), v=float(b.volume), vw=float(b.vwap or 0.0))

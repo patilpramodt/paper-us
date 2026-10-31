@@ -29,15 +29,36 @@ per-contract fee. Alpaca is used only for data, the market calendar and contract
 - Polling every 10s: SL uses the latest trade plus the high/low of 1-minute bars since entry, so a wick
   between polls is still caught, but the fill is the bid at detection time, not at the SL price.
 
+## QQQ momentum (shares)
+
+A separate service, `paper-us-qqq`, paper trades 50 QQQ shares on the noise-area rule from
+`backtest/momentum.py` with the same settings (look 14, vm 1, 30-minute checks). It is long or short,
+flat by the close, and sends no orders. Fills are simulated at the last trade when a check runs and at the
+last bar's close at EOD, with 0.2bp per side as `fees`. Output: `data/qqq_momentum_trades.csv`,
+`logs/qqq_momentum.log` (every check is logged with its bands).
+
+`backtest/mom_parity.py` replays this engine over the backtest's bars. On SIP bars its 437 trades over
+2024-11..2026-10 are the backtest's 437. Limits of the live version:
+
+- Bands and prev close use SIP history, but today's bars are free IEX. Over the same 500 days 68 of 437
+  trades differ from a SIP-driven run (entry or exit time or side); total P&L was about the same.
+- The backtest makes only 5.5bp/trade gross, so fills matter: above 1bp/side the Sharpe drops fast.
+- Shorts assume borrow is free and available. Margin and dividends are ignored.
+
+Install: `cp deploy/paper-us-qqq.service /etc/systemd/system/ && systemctl daemon-reload && systemctl enable --now paper-us-qqq`
+
 ## Layout
 
     paper_us/config.py       all tunables (+ env overrides)
     paper_us/engine.py       the strategy logic (pure; takes a DataProvider)
     paper_us/alpaca_data.py  Alpaca data/calendar/contract adapter
     paper_us/runner.py       service loop (waits for session, polls, squares off)
+    paper_us/momentum.py     QQQ momentum engine
+    paper_us/momentum_runner.py  its service entry point
     smoke_test.py            checks every Alpaca call before you trust the bot
-    tests/                   24 tests, no network
+    tests/                   tests, no network
     deploy/paper-us.service  systemd unit
+    deploy/paper-us-qqq.service  systemd unit for QQQ momentum
 
 Outputs: `data/orb30_rvol_trades.csv`, `data/orb30_rvol_trail_trades.csv` (one row per trade),
 `data/state_*.json` (restart safety), `logs/paper_us.log`.

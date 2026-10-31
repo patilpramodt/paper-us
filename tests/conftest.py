@@ -34,6 +34,7 @@ class FakeProvider:
         self._session = session or Session(DAY, OPEN, CLOSE)
         self.bars = {}                 # sym -> list[Bar]
         self.hist = {}                 # sym -> list[float]
+        self.history = {}              # sym -> list[(Session, list[Bar])]
         self.price = {}                # sym -> last trade
         self.quotes = {}               # option symbol -> Quote
         self.quote_default = Quote(bid=4.90, ask=5.00)
@@ -47,6 +48,9 @@ class FakeProvider:
 
     def first_window_volumes(self, symbols, before_day, n):
         return {s: list(self.hist.get(s, []))[:n] for s in symbols}
+
+    def history_sessions(self, symbol, before_day, n):
+        return self.history.get(symbol, [])[-n:]
 
     def latest_price(self, symbol):
         return self.price.get(symbol)

@@ -23,12 +23,12 @@ def now_et() -> datetime:
     return datetime.now(ET)
 
 
-def setup_logging(log_dir: str) -> None:
+def setup_logging(log_dir: str, filename: str = "paper_us.log") -> None:
     os.makedirs(log_dir, exist_ok=True)
     fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
     root = logging.getLogger()
     root.setLevel(logging.INFO)
-    fh = RotatingFileHandler(os.path.join(log_dir, "paper_us.log"), maxBytes=5_000_000, backupCount=5)
+    fh = RotatingFileHandler(os.path.join(log_dir, filename), maxBytes=5_000_000, backupCount=5)
     sh = logging.StreamHandler()
     for h in (fh, sh):
         h.setFormatter(fmt)

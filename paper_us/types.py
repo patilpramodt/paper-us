@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Dict, List, Optional, Protocol, Sequence
+from typing import Dict, List, Optional, Protocol, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
 ET = ZoneInfo("America/New_York")
@@ -18,6 +18,7 @@ class Bar:
     l: float
     c: float
     v: float
+    vw: float = 0.0  # bar VWAP
 
 
 @dataclass(frozen=True)
@@ -75,6 +76,9 @@ class DataProvider(Protocol):
 
     def first_window_volumes(self, symbols: Sequence[str], before_day: date, n: int) -> Dict[str, List[float]]:
         """Volume of the first 30 minutes (09:30-10:00 ET) of up to `n` sessions before `before_day`, newest first."""
+
+    def history_sessions(self, symbol: str, before_day: date, n: int) -> List[Tuple[Session, List[Bar]]]:
+        """Regular-session 1-minute bars of the last `n` sessions before `before_day`, oldest first."""
 
     def latest_price(self, symbol: str) -> Optional[float]:
         """Last trade price of the underlying."""

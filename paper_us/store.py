@@ -6,13 +6,18 @@ import csv
 import json
 import os
 from datetime import date, datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Sequence
 
 TRADE_FIELDS = [
     "date", "variant", "symbol", "side", "contract", "strike", "expiry",
     "entry_time", "exit_time", "qty", "entry_px", "exit_px", "reason",
     "gross_pnl", "fees", "net_pnl", "peak_gross", "rvol", "or_high", "or_low",
     "sl_level", "spot_entry", "spot_exit", "entry_spread_pct", "stale_exit",
+]
+
+MOM_TRADE_FIELDS = [
+    "date", "symbol", "side", "qty", "entry_time", "exit_time", "entry_px", "exit_px", "reason",
+    "gross_pnl", "fees", "net_pnl", "entry_close", "upper", "lower", "vwap", "stale_exit",
 ]
 
 
@@ -25,11 +30,11 @@ class Store:
     def trades_path(self, variant: str) -> str:
         return os.path.join(self.dir, f"{variant.lower()}_trades.csv")
 
-    def append_trade(self, variant: str, row: Dict[str, Any]) -> None:
+    def append_trade(self, variant: str, row: Dict[str, Any], fields: Sequence[str] = TRADE_FIELDS) -> None:
         path = self.trades_path(variant)
         new = not os.path.exists(path)
         with open(path, "a", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=TRADE_FIELDS, extrasaction="ignore")
+            w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
             if new:
                 w.writeheader()
             w.writerow(row)
